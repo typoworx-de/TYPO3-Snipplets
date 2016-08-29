@@ -4,48 +4,56 @@ class someModelClass
 {
 	public static function checkModel()
 	{
-		$className = self::class;
+		$skipSysFields = true;
 
+		$className = self::class;
 		$classTableName = str_replace('\\', '_', __CLASS__);
 		$classTableName = 'tx_' . strtolower(substr($classTableName, strpos($classTableName, '_') + 1));
-
 		$tableTca = $GLOBALS['TCA'][ $classTableName ];
 		$tableTcaFields = array_keys($tableTca['columns']);
-		echo '<pre>';
 
+		echo '<pre>';
 		/*
 		die(var_dump(
 			$classTableName,
 			$tableTcaFields
 		));
 		*/
-
 		$reflection = new \ReflectionClass($className);
 		$inspectClassInstance = new $className();
-
 		$inexistentProperties = [];
 		$inExistentOptionalSysProperties = [];
-
 		$inconsistentGetterSetter = [];
 		foreach($tableTcaFields as $field)
 		{
 			//$tcaCaseInsensitiveKey = str_replace('_', '', $field);
-
 			$failed = false;
 			$propertyName = \TYPO3\CMS\Core\Utility\GeneralUtility::underscoredToLowerCamelCase($field);
 
-			// Check presence of Property
-			if(!$reflection->hasProperty($propertyName))
-			{
-				$failed = true;
+			$isSysField = (strpos($field, 'sys_') === 0  || strpos($field, 't3ver_') === 0 || strpos($field, 'l10n_') === 0 || $field === 'uid' || $field === 'pid');
 
-				if(strpos($field, 'sys_') === 0  || strpos($field, 't3ver_') === 0 || strpos($field, 'l10n_') === 0 || $field === 'uid' || $field === 'pid')
+			if($isSysField && $skipSysFields)
+			{
+				continue;
+			}
+
+			// Check presence of Property
+			printf('Checking Property... \'%s\'' . "\n", $propertyName);
+			if($reflection->hasProperty($propertyName))
+			{
+				echo '[*] Passed' . "\n\n";
+			}
+			else
+			{
+				echo '[!] Failed' . "\n\n";
+
+				$failed = true;
+				if($isSysField)
 				{
 					if(empty($inExistentOptionalSysProperties[$field]))
 					{
 						$inExistentOptionalSysProperties[$field] = [];
 					}
-
 					$inExistentOptionalSysProperties[$field][] = 'property';
 				}
 				else
@@ -54,24 +62,28 @@ class someModelClass
 					{
 						$inexistentProperties[$field] = [];
 					}
-
 					$inexistentProperties[$field][] = 'property';
 				}
 			}
 
 			// Check presence of Getter
 			$getterName = 'get' . ucFirst($propertyName);
-			if(!$reflection->hasMethod($getterName))
-			{
-				$failed = true;
 
+			printf('Checking presence of \'%s\' ...' . "\n", $getterName);
+			if($reflection->hasMethod($getterName))
+			{
+				echo '[*] Passed' . "\n\n";
+			}
+			else
+			{
+				echo '[!] Failed' . "\n\n";
+				$failed = true;
 				if(strpos($field, 'sys_') === 0  || strpos($field, 't3ver_') === 0 || strpos($field, 'l10n_') === 0 || $field === 'uid' || $field === 'pid')
 				{
 					if(empty($inExistentOptionalSysProperties[$field]))
 					{
 						$inExistentOptionalSysProperties[$field] = [];
 					}
-
 					$inExistentOptionalSysProperties[$field][] = 'getter';
 				}
 				else
@@ -80,24 +92,29 @@ class someModelClass
 					{
 						$inexistentProperties[$field] = [];
 					}
-
 					$inexistentProperties[$field][] = 'getter';
 				}
 			}
 
 			// Check presence of Setter
 			$setterName = 'set' . ucFirst($propertyName);
-			if(!$reflection->hasMethod($setterName))
-			{
-				$failed = true;
 
+			printf('Checking presence of \'%s\' ...' . "\n", $setterName);
+			if($reflection->hasMethod($setterName))
+			{
+				echo '[*] Passed' . "\n\n";
+			}
+			else
+			{
+				echo '[!] Failed' . "\n\n";
+
+				$failed = true;
 				if(strpos($field, 'sys_') === 0  || strpos($field, 't3ver_') === 0 || strpos($field, 'l10n_') === 0 || $field === 'uid' || $field === 'pid')
 				{
 					if(empty($inExistentOptionalSysProperties[$field]))
 					{
 						$inExistentOptionalSysProperties[$field] = [];
 					}
-
 					$inExistentOptionalSysProperties[$field][] = 'setter';
 				}
 				else
@@ -106,7 +123,6 @@ class someModelClass
 					{
 						$inexistentProperties[$field] = [];
 					}
-
 					$inexistentProperties[$field][] = 'setter';
 				}
 			}
@@ -118,17 +134,14 @@ class someModelClass
 				if($setterParameter[0]->getClass() !== NULL && !empty($setterParameter[0]->getClass()->name))
 				{
 					$paramType = $setterParameter[0]->getClass()->name;
-					printf('Checking ... \'%s\' using type \'%s\'' . "\n", $propertyName, $paramType);
-
+					printf('Checking ... \'%s\' using type \'%s\'' . "\n", $setterName, $paramType);
 					if(strpos($paramType, '\\') !== FALSE)
 					{
 						$paramType = '\\' . ltrim($paramType, '\\');
-
 						if(!class_exists($paramType))
 						{
 							echo '[!] Failed! Unknown Type/Class!' . "\n\n";
 						}
-
 						$mockArgument = new $paramType();
 					}
 					else
@@ -140,8 +153,6 @@ class someModelClass
 						 */
 						$mockArgument = rand(0, 255);
 					}
-
-
 					if(empty($mockArgument))
 					{
 						echo '[!] Failed! Cannot determine correct Argument to pass to Setter!' . "\n\n";
@@ -152,7 +163,6 @@ class someModelClass
 						{
 							call_user_func_array(array($inspectClassInstance, $setterName), array($mockArgument));
 							$getArgument = call_user_func_array(array($inspectClassInstance, $getterName), array($mockArgument));
-
 							if(!empty($mockArgument) && empty($getArgument))
 							{
 								echo '[!] Getter returns empty value' . "\n\n";
@@ -169,25 +179,21 @@ class someModelClass
 							echo '[!] Setter/Getter Exception thrown.' . "\n\n";
 							$inconsistentGetterSetter[$field] = [$getterName, $setterName];
 						}
-
 						if(empty($inconsistentGetterSetter[$field]))
 						{
-							echo '[*] Passed.' . "\n\n";
+							echo '[*] Passed' . "\n\n";
 						}
 					}
 				}
 			}
 
+			echo '<hr style="border:0; border-top:1px solid #f1f1f1;" />';
 		}
-
-
 		echo "\n";
 		echo "\nMandatory:\n";
 		print_r($inexistentProperties);
-
 		echo "\nGetter/Setter Methods:\n";
 		print_r($inconsistentGetterSetter);
-
 		echo "\nOptional (System Fields):\n";
 		print_r($inExistentOptionalSysProperties);
 		exit;
