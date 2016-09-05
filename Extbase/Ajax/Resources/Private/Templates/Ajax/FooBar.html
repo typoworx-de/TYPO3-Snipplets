@@ -1,0 +1,13 @@
+<f:layout name="Default" />
+
+<f:section name="main">
+    <f:comment><!--
+    data-ajax="{context: 'foobar', controller: 'ajax', action: 'foobar', arguments: {foo: 'bar'}}"
+    will be triggered as ?eID=staticPrefixFromJs_[foobar]&controller=ajax&action=foobar&arguments[foo]=bar
+    
+    arguments are mapped as setting into Extbase-Bootstrap
+    --></f:comment>
+    <div class="ajaxController newdialogsAction" data-ajax="{context: 'foobar', controller: 'ajax', action: 'foobar'}">
+      <code>Let's output something interesting here...</code>
+    </div>
+</f:section>
