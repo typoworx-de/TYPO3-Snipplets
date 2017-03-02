@@ -1,6 +1,6 @@
 <settings.background>
     <TCEforms type="array">
-        <label>Hintergrund</label>
+        <label>Fal File</label>
         <config>
             <type>inline</type>
             <appearance type="array">
