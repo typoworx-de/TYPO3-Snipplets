@@ -33,11 +33,9 @@ class Dispatcher
 
         // Initializing TypoScript Frontend Controller.
         $id = (isset($arguments['id'])) ? $arguments['id'] : 0;
-        if (!empty($id))
-        {
-            // Initialize TSFE if given Page-ID
-            $this->initializeTSFE($id);
-        }
+
+        // Initialize TSFE if given Page-ID or NULL
+        $this->initializeTSFE($id);
 
         // Set which Extbase-Controller is used
         /*
@@ -73,30 +71,32 @@ class Dispatcher
             }
 
             $pluginConfiguration = $this->getPluginConfiguration($dispatchController);
+
             if(isset($pluginConfiguration))
             {
                 $defaultController = key($pluginConfiguration);
-                $defaultAction = current($pluginConfiguration);
-
                 if (empty($arguments['controller']))
                 {
-
                     $dispatchController['controller'] = $defaultController;
                 }
+
+                //$defaultActions = $pluginConfiguration[ $dispatchController['controller'] ]['actions'];
+
+                $defaultActions = $this->getPluginConfiguration($dispatchController, $dispatchController['controller']);
+
                 if (empty($arguments['action']))
                 {
-
-                    $dispatchController['action'] = isset($defaultAction) ? $defaultAction[0] : '';
+                    $dispatchController['action'] = isset($defaultActions) ? $defaultActions[0] : '';
                 }
 
                 $dispatchController['switchableControllerActions'] = [
-                    $defaultController => implode(',', $pluginConfiguration['actions'])
+                    $dispatchController['controller'] => $defaultActions
                 ];
             }
             else
             {
                 $dispatchController['switchableControllerActions'] = [
-                    $dispatchController['controller'] => array($dispatchController['action'])
+                    $dispatchController['controller'] => [ $dispatchController['action'] ]
                 ];
             }
         }
@@ -110,8 +110,7 @@ class Dispatcher
                 throw new \Exception(sprintf('Cannot determine default Vendor/Extension-Name in %s', __CLASS__));
             }
         }
-        ///die(var_dump('<pre>', __NAMESPACE__, $dispatchController, $pluginConfiguration));
-
+        ///die(var_dump('<pre>', __METHOD__, $dispatchController));
 
         /**
          * Build the request
@@ -119,37 +118,17 @@ class Dispatcher
          */
         try
         {
-            /*
-            $request = $this->objectManager->get('TYPO3\CMS\Extbase\Mvc\Request');
-            $request->setControllerVendorName($dispatchController['vendorName']);
-            $request->setControllerExtensionName($dispatchController['extensionName']);
-            $request->setPluginName($dispatchController['pluginName']);
-            $request->setControllerName($dispatchController['controller']);
-            $request->setControllerActionName($dispatchController['action']);
-            $request->setFormat(isset($arguments['format']) ? $arguments['format'] : 'html');
-            unset($arguments['action'], $arguments['format']);
-            $request->setArguments($arguments);
-
-            /**
-             * Build Response
-             * by dispatched Request to Extbase-Controller/Action
-            * /
-            $response = $this->objectManager->get('TYPO3\CMS\Extbase\Mvc\ResponseInterface');
-            $dispatcher = $this->objectManager->get('TYPO3\CMS\Extbase\Mvc\Dispatcher');
-            $dispatcher->dispatch($request, $response);
-
-            /** Just for Debugging! * /
-            //die(var_dump('<pre>', __METHOD__, $arguments, $response->getContent()));
-            // Display the final result on screen.
-            echo $response->getContent();
-            die('STOP');
-            //*/
-
             if (empty($arguments['id']))
             {
+                /**
+                 * Attention:
+                 * Currently a lot of TypoScript-Setup is missing at this point!
+                 *
+                 * f.e. Extbase Table-Mappings from TypoScript are unknown!
+                 */
+
                 /** @var \TYPO3\CMS\Extbase\Mvc\Web\Request $request */
                 $requestDispatch = $this->objectManager->get('TYPO3\CMS\Extbase\Mvc\Web\Request');
-
 
                 $requestDispatch->setControllerVendorName($dispatchController['vendorName']);
                 $requestDispatch->setControllerExtensionName($dispatchController['extensionName']);
@@ -185,12 +164,14 @@ class Dispatcher
         catch (\Exception $e)
         {
             header('HTTP/1.1 503 Service Unavailable');
-            ///die(var_dump('<pre>', $dispatchController, $e));
-            //die(sprintf('Internal Exception in %s on line %d', __CLASS__, __LINE__));
 
             if (!\TYPO3\CMS\Core\Utility\GeneralUtility::getApplicationContext()->isProduction())
             {
                 throw($e);
+            }
+            else
+            {
+                die('API is temporarely unavailable');
             }
         }
     }
@@ -201,20 +182,22 @@ class Dispatcher
      * @param int $id The if of the rootPage from which you want the controller to be based on.
      * @return bool
      */
-    private function initializeTSFE($id)
+    private function initializeTSFE($id = null)
     {
         if (TYPO3_MODE !== 'FE')
         {
             return false;
         }
         $id = intval($id);
+
         /** @var \TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController */
-        //$GLOBALS['TSFE'] = $this->objectManager->get('TYPO3\\CMS\\Frontend\\Controller\\TypoScriptFrontendController', $GLOBALS['TYPO3_CONF_VARS'], $id, 0);
+        $GLOBALS['TSFE'] = $this->objectManager->get('TYPO3\\CMS\\Frontend\\Controller\\TypoScriptFrontendController', $GLOBALS['TYPO3_CONF_VARS'], $id, 0);
         $GLOBALS['TSFE'] = GeneralUtility::makeInstance('TYPO3\\CMS\\Frontend\\Controller\\TypoScriptFrontendController', $GLOBALS['TYPO3_CONF_VARS'], $id, 0, true);
         $GLOBALS['TSFE']->sys_page = GeneralUtility::makeInstance('TYPO3\CMS\Frontend\Page\PageRepository');
         $GLOBALS['TSFE']->cObj = $this->objectManager->get('TYPO3\\CMS\\Frontend\\ContentObject\\ContentObjectRenderer');
         $configurationManager = $this->objectManager->get('TYPO3\\CMS\\Extbase\\Configuration\\ConfigurationManagerInterface');
         $configurationManager->setContentObject($GLOBALS['TSFE']->cObj);
+
         EidUtility::initLanguage();
         EidUtility::initTCA();
 
@@ -223,26 +206,43 @@ class Dispatcher
         $GLOBALS['TSFE']->connectToDB();
         $GLOBALS['TSFE']->initFEuser();
         $GLOBALS['TSFE']->initUserGroups();
-        $GLOBALS['TSFE']->checkAlternativeIdMethods();
-        $GLOBALS['TSFE']->determineId();
-        $GLOBALS['TSFE']->initTemplate();
-        $GLOBALS['TSFE']->getPageAndRootline();
-        $GLOBALS['TSFE']->getConfigArray();
+
+        if(!empty($id))
+        {
+            $GLOBALS['TSFE']->checkAlternativeIdMethods();
+            $GLOBALS['TSFE']->determineId();
+            $GLOBALS['TSFE']->getPageAndRootline();
+            $GLOBALS['TSFE']->initTemplate();
+            $GLOBALS['TSFE']->getConfigArray();
+        }
+
         $GLOBALS['TSFE']->settingLanguage();
     }
 
     /**
      * @param $dispatchController
+     * @param bool $resolveActions
      * @return array
      */
-    protected function getPluginConfiguration($dispatchController)
+    protected function getPluginConfiguration($dispatchController, $resolveActions = false)
     {
-        if(!isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][ $dispatchController['extensionName'] ]['plugins'][ $dispatchController['pluginName'] ]['controllers'][ $dispatchController['controller'] ]))
+        if(isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][ $dispatchController['extensionName'] ]['plugins'][ $dispatchController['pluginName'] ]['controllers'][ $dispatchController['controller'] ]))
         {
-            return [];
+
+            if ($resolveActions == true)
+            {
+                if (isset($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][$dispatchController['extensionName']]['plugins'][$dispatchController['pluginName']]['controllers'][$dispatchController['controller']]))
+                {
+                    return (array)$GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][$dispatchController['extensionName']]['plugins'][$dispatchController['pluginName']]['controllers'][$dispatchController['controller']]['actions'];
+                }
+            }
+            else
+            {
+                return (array)$GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][$dispatchController['extensionName']]['plugins'][$dispatchController['pluginName']]['controllers'];
+            }
         }
 
-        return (array)$GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['extbase']['extensions'][ $dispatchController['extensionName'] ]['plugins'][ $dispatchController['pluginName'] ]['controllers'][ $dispatchController['controller'] ];
+        return [];
     }
 }
 
