@@ -12,3 +12,5 @@ $signalSlotDispatcher->connect(
     'listAction',
     TRUE
 );
+
+$GLOBALS['TYPO3_CONF_VARS']['EXT']['news']['Domain/Repository/AbstractDemandedRepository.php']['findDemanded'][$_EXTKEY] = 'Typoworx\\MyPluginName\\Hooks\\NewsDemand->modify';
