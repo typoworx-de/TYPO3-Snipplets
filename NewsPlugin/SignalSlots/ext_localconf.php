@@ -8,7 +8,7 @@ $signalSlotDispatcher = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('TY
 $signalSlotDispatcher->connect(
     'GeorgRinger\\News\\Controller\\NewsController',
     \GeorgRinger\News\Controller\NewsController::SIGNAL_NEWS_LIST_ACTION,
-    'Aoe\\AoeLenzeAkbtd\\Slots\\NewsControllerSlot',
+    'Typoworx\\MyPluginName\\Slots\\NewsControllerSlot',
     'listAction',
     TRUE
 );
