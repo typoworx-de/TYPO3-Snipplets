@@ -1,0 +1,55 @@
+<div xmlns="http://www.w3.org/1999/xhtml" lang="en"
+     xmlns:f="http://typo3.org/ns/TYPO3/Fluid/ViewHelpers"
+     xmlns:v="http://typo3.org/ns/FluidTYPO3/Vhs/ViewHelpers"
+     xmlns:flux="http://typo3.org/ns/FluidTYPO3/Flux/ViewHelpers"
+>
+    <f:layout name="Default"/>
+
+    <f:section name="Main">
+        <ul class="meta-super meta-language">
+            <v:page.languageMenu
+                as="languageNavigation"
+                linkCurrent="1"
+                hideNotTranslated="0"
+                flagPath="typo3/sysext/core/Resources/Public/Icons/Flags/PNG/"
+                flagImageType="png"
+            >
+                <f:for each="{languageNavigation}" as="item" key="languageUid">
+                    <v:variable.set name="liClass" value="{f:if(condition: item.current, then: 'active')} {f:if(condition: item.inactive, then: 'text-muted')}" />
+                    <li class="{liClass -> v:format.replace(substring: ' ', replacement: '')}">
+                        <v:variable.set name="class" value="" />
+                        <v:variable.set name="style" value="" />
+                        <f:if condition="{enableFlags}">
+                            <v:media.exists file="{item.flagSrc}">
+                                <f:then>
+                                    <v:variable.set name="class" value="{class} has-flag" />
+                                    <v:variable.set name="style" value="background-image: url({f:uri.image(src: '{item.flagSrc}', width: '18', height: '16')});height: 16px;" />
+                                </f:then>
+                            </v:media.exists>
+                        </f:if>
+                        <f:switch expression="{languageUid}">
+                            <f:case value="0">
+                                <v:variable.set name="hreflang" value="de-DE" />
+                            </f:case>
+                            <f:case value="2">
+                                <v:variable.set name="hreflang" value="en-GB" />
+                            </f:case>
+                        </f:switch>
+                        <v:variable.set name="style" value="{f:if(condition: '{style}', then: ' style=\"{style -> v:format.replace(substring: \'  \', replacement: \'\')}\"')}" />
+                        <v:variable.set name="class" value="{f:if(condition: '{class}', then: ' class=\"{class -> v:format.replace(substring: \'  \', replacement: \'\')}\"')}" />
+                        <f:if condition="{item.inactive}">
+                            <f:else>
+                                <a href="{item.url}" hreflang="{hreflang}" alt="{item.label}"{style -> v:format.trim() -> f:format.raw()}{class -> v:format.trim() -> f:format.raw()}>
+                                    <span>{item.label}</span>
+                                </a>
+                            </f:else>
+                            <f:then>
+                                <span alt="{item.label} language is available on this page." title="{item.label} language is not available on this page."{style -> v:format.trim() -> f:format.raw()}{class -> v:format.trim() -> f:format.raw()}>{item.label}</span>
+                            </f:then>
+                        </f:if>
+                    </li>
+                </f:for>
+            </v:page.languageMenu>
+        </ul>
+    </f:section>
+</div>
