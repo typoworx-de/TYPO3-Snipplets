@@ -250,13 +250,12 @@ class AccessLogReplay
 
         if($httpCode == 200)
         {
-            ThrowNotice::create(sprintf('HTTP-Response %d', $httpCode))->asNotice();
+            ThrowNotice::create(sprintf("HTTP-Response %d\n---", $httpCode))->asNotice();
         }
         else
         {
-            ThrowException::create(sprintf('HTTP-Response %d', $httpCode))->asNotice();
+            ThrowException::create(sprintf("HTTP-Response %d\n---", $httpCode))->asNotice();
         }
-
     }
 
     public function __destruct()
