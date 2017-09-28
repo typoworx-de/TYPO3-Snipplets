@@ -282,10 +282,17 @@ class AccessLogReplay
     {
         // Invoke Curl!
         ThrowNotice::create(sprintf('Request %d', $this->logLine))->asNotice();
-        ThrowNotice::create(sprintf('Calling curl on \'%s\' with URI \'%s\'', $httpServer, $logLineToReplay['requestUri']))->asNotice();
+        ThrowNotice::create(sprintf('%s curl URL \'%s%s\'', $logLineToReplay['requestType'], $httpServer, $logLineToReplay['requestUri']))->asNotice();
 
         $requestUrl = sprintf(rtrim($httpServer, ' /'), $logLineToReplay['requestUri']);
         curl_setopt($this->curlHandle, CURLOPT_URL, $requestUrl);
+
+        if($logLineToReplay['requestType'] == 'POST')
+        {
+            curl_setopt($this->curlHandle, CURLOPT_POST, TRUE);
+            curl_setopt($this->curlHandle, '');
+        }
+
         curl_exec($this->curlHandle);
         $httpCode = curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE);
 
