@@ -1,0 +1,321 @@
+#!/usr/bin/env php
+<?php
+namespace IMI\Tests;
+
+use \Exception;
+use \SplFileObject;
+
+/**
+ * Class ThrowException
+ * @package IMI\Tests
+ */
+class ThrowException extends \Exception
+{
+    /**
+     * @param string $message
+     * @param int $code
+     * @param \Throwable|null $previous
+     * @return self
+     */
+    public static function create($message = "", $code = 0, \Throwable $previous = null)
+    {
+        $class = get_called_class();
+        return new $class($message, $code, $previous);
+    }
+
+    /**
+     * Throw Exception
+     * @throws ThrowException
+     */
+    public function throwNow()
+    {
+        if(php_sapi_name() === 'cli')
+        {
+            printf("[Exception] %s\n", $this->getMessage());
+            exit;
+        }
+
+        throw $this;
+    }
+
+    /**
+     * Silent notice to CLI
+     */
+    public function asNotice()
+    {
+        printf("[x] %s\n", $this->getMessage());
+    }
+}
+
+/**
+ * Class ThrowNotice
+ * @package IMI\Tests
+ */
+class ThrowNotice extends \Exception
+{
+    /**
+     * @param string $message
+     * @param int $code
+     * @param \Throwable|null $previous
+     * @return self
+     */
+    public static function create($message = "", $code = 0, \Throwable $previous = null)
+    {
+        $class = get_called_class();
+        return new $class($message, $code, $previous);
+    }
+
+    /**
+     * Throw Exception
+     * @throws ThrowException
+     */
+    public function throwNow()
+    {
+        // Notice is not throwable as breaking Expection
+        $this->asNotice();
+    }
+
+    /**
+     * Silent notice to CLI
+     */
+    public function asNotice()
+    {
+        printf("[i] %s\n", $this->getMessage());
+    }
+}
+
+/**
+ * Class AccessLogReplay
+ * @package IMI\Tests
+ */
+class AccessLogReplay
+{
+    /** @var resource */
+    private $logPointer;
+
+    /** @var resource */
+    private $curlHandle;
+
+    /** @var int */
+    private $logLine = 0;
+
+    private $maxRequests = -1;
+
+    /**
+     * AccessLogReplay constructor.
+     * @param string $httpServer
+     * @param string $logFile
+     * @param int $startAtLogLine
+     * @param int $maxRequests
+     */
+    public function __construct($httpServer, $logFile, $startAtLogLine = 0, $maxRequests = -1)
+    {
+        $this->bootstrap();
+
+        if(!is_file($logFile))
+        {
+            ThrowException::create(sprintf('Invalid access-log file \'%s\'' , $logFile))->throwNow();
+        }
+
+        if(!filter_var($httpServer, FILTER_VALIDATE_URL))
+        {
+            ThrowException::create(sprintf('Invalid ServerName \'%s\'' , $httpServer))->throwNow();
+        }
+
+        $this->readLog(__DIR__ . '/access.log-tail-200-27092017-1359.log', $startAtLogLine);
+        $this->maxRequests = $maxRequests;
+
+        if(empty($maxRequests))
+        {
+            $logLineToReplay = $this->parseLogLine();
+            $this->replayRequest($httpServer, $logLineToReplay);
+        }
+        else
+        {
+            do
+            {
+                $logLineToReplay = $this->parseLogLine();
+                $this->replayRequest($httpServer, $logLineToReplay);
+            }
+            while(!($this->maxRequests > 0 && $this->logLine > $this->maxRequests));
+        }
+    }
+
+    /**
+     * @param string $httpServer
+     * @param string $logFile
+     * @param int $startAtLogLine
+     * @param int $maxRequests
+     * @return self
+     */
+    public static function run($httpServer, $logFile, $startAtLogLine = 0, $maxRequests = -1)
+    {
+        $class = get_called_class();
+        return new $class($httpServer, $logFile, $startAtLogLine, $maxRequests);
+    }
+
+    public static function syntax()
+    {
+        printf("Syntax: %s --file apache-access.log\n", basename(__FILE__));
+        printf("This utility can replay HTTP-Requests on another Server from an Apache Access-Log for testing purposes\n\n");
+
+        printf("-h|--help                       Shows this Help\n");
+        printf("-s|--server=my-server.local     Server being used to replay Requests to\n");
+        printf("-l|--line=100                   Seeks to given line-number in Access-Log\n");
+        printf("-m|--max=10                     Number of maximal requests\n");
+        printf("-f|--file=apache-access.log     Access-Log to be used for replay\n");
+        exit(1);
+    }
+
+    public function bootstrap()
+    {
+        error_reporting(E_ALL & ~E_NOTICE);
+
+        $this->curlHandle = curl_init();
+        curl_setopt($this->curlHandle, CURLOPT_HEADER, TRUE);
+        curl_setopt($this->curlHandle, CURLOPT_NOBODY, TRUE);
+        curl_setopt($this->curlHandle, CURLOPT_FORBID_REUSE, FALSE);
+        curl_setopt($this->curlHandle, CURLOPT_RETURNTRANSFER, TRUE);
+    }
+
+    /**
+     * @param $accessLogFile
+     * @param int $startAtLogLine
+     */
+    protected function readLog($accessLogFile, $startAtLogLine = 0)
+    {
+        if(!is_file($accessLogFile))
+        {
+            ThrowException::create(sprintf('AccessLog-File "%s" not found!', $accessLogFile))->throwNow();
+        }
+
+        $this->logLine = 0;
+        //$this->logPointer = fopen($accessLogFile, 'r');
+
+        $this->logPointer = new \SplFileObject($accessLogFile);
+        $this->logPointer->seek($startAtLogLine);
+    }
+
+    /**
+     * @param string $requestType
+     * @return null
+     */
+    protected function parseLogLine($requestType = '')
+    {
+        $requestType = strtoupper(trim($requestType));
+
+        if($this->maxRequests > 0 && $this->logLine > $this->maxRequests)
+        {
+            ThrowNotice::create(sprintf('Request-Limit reached at %d of %d requests.', $this->logLine, $this->maxRequests))->asNotice();
+            exit;
+        }
+
+        // Fetch single line until EOF reached!
+        do
+        {
+            $this->logLine++;
+            $logRow = $this->logPointer->fgets();
+
+            if(preg_match( '/^(?<clientIp>\S+) [\S- ]+ \[[^:]+:(?<accessDate>\d+:\d+:\d+) (?<timeZone>[^\]]+)\] \"(?<requestType>\S+) (?<requestUri>.*?) (?<httpVersion>\S+)\" (?<requestStatus>\S+) (\S+) "(?<requestUriAndDomain>[^"]*)" "(?<userAgent>[^"]*)"$/', $logRow, $parsedLogRow))
+            {
+                if(!empty($type) && ($requestType == $parsedLogRow['requestType']))
+                {
+                    continue;
+                }
+
+                return $parsedLogRow;
+            }
+
+            ThrowException::create(sprintf('Cannot parse Log-Line %d', $this->logLine))->asNotice();
+        }
+        while(empty($logRow) || feof($this->logPointer));
+
+        return null;
+    }
+
+    /**
+     * @param string $httpServer
+     * @param array $logLineToReplay
+     */
+    protected function replayRequest($httpServer = '', array $logLineToReplay)
+    {
+        // Invoke Curl!
+        ThrowNotice::create(sprintf('Request %d', $this->logLine))->asNotice();
+        ThrowNotice::create(sprintf('Calling curl on \'%s\' with URI \'%s\'', $httpServer, $logLineToReplay['requestUri']))->asNotice();
+
+        $requestUrl = sprintf(rtrim($httpServer, ' /'), $logLineToReplay['requestUri']);
+        curl_setopt($this->curlHandle, CURLOPT_URL, $requestUrl);
+        curl_exec($this->curlHandle);
+        $httpCode = curl_getinfo($this->curlHandle, CURLINFO_HTTP_CODE);
+
+        if($httpCode == 200)
+        {
+            ThrowNotice::create(sprintf('HTTP-Response %d', $httpCode))->asNotice();
+        }
+        else
+        {
+            ThrowException::create(sprintf('HTTP-Response %d', $httpCode))->asNotice();
+        }
+
+    }
+
+    public function __destruct()
+    {
+        if(is_resource($this->logPointer))
+        {
+            fclose($this->logPointer);
+        }
+
+        if(is_resource($this->curlHandle))
+        {
+            curl_close($this->curlHandle);
+        }
+    }
+}
+
+$options = getopt('s:f:l::m::h', ['server:','file:','line::','max::','help']);
+
+$httpServer = '';
+$logFile = '';
+$maxRequests = -1;
+$startAtLogLine = 0;
+
+foreach($options as $option => $value)
+{
+    switch($option)
+    {
+        case 'h':
+        case 'help':    AccessLogReplay::syntax();
+            break;
+
+        case 's':       $httpServer = $value;
+            break;
+        case 'server':  $httpServer = $value;
+            break;
+
+        case 'f':       $logFile = $value;
+            break;
+        case 'file':    $logFile = $value;
+            break;
+
+        case 'l':       $startAtLogLine = intval($value);
+            break;
+        case 'line':    $startAtLogLine = intval($value);
+            break;
+
+        case 'm':       $maxRequests = intval($value);
+            break;
+        case 'max':     $maxRequests = intval($value);
+            break;
+    }
+}
+
+
+// Mandatory options
+if(empty($httpServer) || empty($logFile) || empty($httpServer))
+{
+    AccessLogReplay::syntax();
+}
+
+
+AccessLogReplay::run($httpServer, $logFile, $startAtLogLine, $maxRequests);
