@@ -90,7 +90,7 @@ class ThrowNotice extends \Exception
  */
 class AccessLogReplay
 {
-    /** @var resource */
+    /** @var \SplFileObject */
     private $logPointer;
 
     /** @var resource */
@@ -120,6 +120,9 @@ class AccessLogReplay
 
         $this->bootstrap();
 
+        $logFile = str_replace('./', __DIR__ . '/', $logFile);
+        $logFile = realpath($logFile);
+
         if(!is_file($logFile))
         {
             ThrowException::create(sprintf('Invalid access-log file \'%s\'' , $logFile))->throwNow();
@@ -130,11 +133,17 @@ class AccessLogReplay
             ThrowException::create(sprintf('Invalid ServerName \'%s\'' , $httpServer))->throwNow();
         }
 
-        $this->readLog(__DIR__ . '/access.log-tail-200-27092017-1359.log', $startAtLogLine);
+        $this->readLog($logFile, $startAtLogLine);
 
         if(empty($maxRequests))
         {
             $logLineToReplay = $this->parseLogLine();
+
+            if(empty($logLineToReplay))
+            {
+                ThrowException::create('Empty line returned from LogParser.');
+            }
+
             $this->replayRequest($httpServer, $logLineToReplay);
         }
         else
@@ -142,10 +151,25 @@ class AccessLogReplay
             do
             {
                 $logLineToReplay = $this->parseLogLine();
+
+                if($logLineToReplay === null)
+                {
+                    break;
+                }
+
+                if(empty($logLineToReplay))
+                {
+                    ThrowException::create(sprintf('Empty line returned from LogParser on line %d.', $this->logLine));
+                    continue;
+                }
+
                 $this->replayRequest($httpServer, $logLineToReplay);
             }
-            while(!($this->maxRequests > 0 && $this->logLine > $this->maxRequests));
+            while(!$this->logPointer->eof() || !($this->maxRequests > 0 && $this->logLine > $this->maxRequests));
         }
+
+        ThrowNotice::create('Done!')->asNotice();
+        exit;
     }
 
     /**
@@ -159,7 +183,7 @@ class AccessLogReplay
     public static function run($httpServer, $requestType, $logFile, $startAtLogLine = 0, $maxRequests = -1)
     {
         $class = get_called_class();
-        return new $class($httpServer, $logFile, $startAtLogLine, $maxRequests);
+        return new $class($httpServer, $requestType, $logFile, $startAtLogLine, $maxRequests);
     }
 
     public static function syntax()
@@ -219,24 +243,33 @@ class AccessLogReplay
         }
 
         // Fetch single line until EOF reached!
-        do
+        while(empty($logRow) || $this->logPointer->eof())
         {
-            $this->logLine++;
-            $logRow = $this->logPointer->fgets();
-
-            if(preg_match( '/^(?<clientIp>\S+) [\S- ]+ \[[^:]+:(?<accessDate>\d+:\d+:\d+) (?<timeZone>[^\]]+)\] \"(?<requestType>\S+) (?<requestUri>.*?) (?<httpVersion>\S+)\" (?<requestStatus>\S+) (\S+) "(?<requestUriAndDomain>[^"]*)" "(?<userAgent>[^"]*)"$/', $logRow, $parsedLogRow))
+            if($this->logPointer->eof())
             {
-                if(!empty($type) && ($requestType == $parsedLogRow['requestType']))
-                {
-                    continue;
-                }
-
-                return $parsedLogRow;
+                return null;
             }
 
-            ThrowException::create(sprintf('Cannot parse Log-Line %d', $this->logLine))->asNotice();
+            $this->logLine++;
+
+            $logRow = $this->logPointer->fgets();
+            $logRow = trim($logRow, " \t\n\r");
+
+            if(!empty($logRow))
+            {
+                if(preg_match( '/^(?<clientIp>\S+) [\S- ]+ \[[^:]+:(?<accessDate>\d+:\d+:\d+) (?<timeZone>[^\]]+)\] \"(?<requestType>\S+) (?<requestUri>.*?) (?<httpVersion>\S+)\" (?<requestStatus>\S+) (\S+) "(?<requestUriAndDomain>[^"]*)" "(?<userAgent>[^"]*)"$/', $logRow, $parsedLogRow))
+                {
+                    if(!empty($type) && ($requestType == $parsedLogRow['requestType']))
+                    {
+                        continue;
+                    }
+
+                    return $parsedLogRow;
+                }
+
+                ThrowException::create(sprintf('Cannot parse Log-Line %d', $this->logLine))->asNotice();
+            }
         }
-        while(empty($logRow) || feof($this->logPointer));
 
         return null;
     }
