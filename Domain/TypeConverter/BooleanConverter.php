@@ -64,8 +64,7 @@ class BooleanConverter extends \TYPO3\CMS\Extbase\Property\TypeConverter\Boolean
             }
         }
 
-        ///DebuggerUtility::var_dump(['Source' => $source, 'Target' => $targetType], __METHOD__);
-        ///DebuggerUtility::var_dump($value, __METHOD__);
+        ////DebuggerUtility::var_dump(['Source' => $source, 'TargetType' => $targetType, 'TargetValue' => $value], __METHOD__);
 
         return (bool)$value;
     }
