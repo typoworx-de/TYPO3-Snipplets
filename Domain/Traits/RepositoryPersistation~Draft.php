@@ -21,6 +21,13 @@ use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 
 trait FooBarTrait
 {
+    protected $addedEntities = [];
+    
+    protected $updatedEntities = [];
+
+    protected $removedEntities = [];
+
+
     public function add($object)
     {
         $this->addedEntities[] = $object;
@@ -28,12 +35,12 @@ trait FooBarTrait
 
     public function update($object)
     {
-        $this->updateEntities[] = $object;
+        $this->updatedEntities[] = $object;
     }
 
     public function remove($object)
     {
-        $this->removeEntities[] = $object;
+        $this->removedEntities[] = $object;
     }
 
     /**
@@ -71,7 +78,7 @@ trait FooBarTrait
         return isset($mappings[ $namespace ])
             ? $mappings[ $namespace ]
             : null
-        ;
+            ;
     }
 
     /**
