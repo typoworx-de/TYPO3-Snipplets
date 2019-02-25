@@ -21,61 +21,6 @@ use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 
 trait FooBarTrait
 {
-    protected $addedEntities = [];
-
-    protected $updateEntities = [];
-
-    protected $removeEntities = [];
-
-
-    public function initializeObject()
-    {
-        /** @var $querySettings \TYPO3\CMS\Extbase\Persistence\Generic\Typo3QuerySettings */
-        $querySettings = $this->objectManager->get(\TYPO3\CMS\Extbase\Persistence\Generic\Typo3QuerySettings::class);
-        $querySettings->setRespectStoragePage(false);
-        $this->setDefaultQuerySettings($querySettings);
-    }
-
-    /**
-     * Flushs the database-table
-     */
-    public function flush()
-    {
-        /** ConnectionPool */
-        GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getConnectionForTable('tx_kuno_domain_model_bankcodes')
-            ->truncate('tx_kuno_domain_model_bankcodes')
-        ;
-    }
-
-    /**
-     * Use Doctrine to speed-up persistation
-     */
-    public function persist() : void
-    {
-        foreach($this->addedEntities as $object)
-        {
-            $tableName = $this->resolveDomainModelTable($object);
-            $objectQueryBuilder = $this->getQueryBuilderForTable($tableName);
-
-            if($objectQueryBuilder !== null)
-            {
-                $objectVars = get_class_vars($object);
-
-                die(var_dump($objectVars));
-
-                if ($object->_isNew())
-                {
-                    $objectQueryBuilder
-                        ->insert($tableName)
-                        ->values($objectVars)
-                        ->execute()
-                    ;
-                }
-            }
-        }
-    }
-
     public function add($object)
     {
         $this->addedEntities[] = $object;
@@ -131,9 +76,9 @@ trait FooBarTrait
 
     /**
      * @param string $tableName
-     * @return \TYPO3\CMS\Core\Database\Query\QueryBuilder
+     * @return \TYPO3\CMS\Core\Database\Connection
      */
-    protected function getQueryBuilderForTable(string $tableName) : \TYPO3\CMS\Core\Database\Query\QueryBuilder
+    protected function getQueryBuilderForTable(string $tableName) : \TYPO3\CMS\Core\Database\Connection
     {
         static $objectMappings;
 
@@ -148,7 +93,6 @@ trait FooBarTrait
             {
                 $objectMappings[ $tableName ] = GeneralUtility::makeInstance(ConnectionPool::class)
                     ->getConnectionForTable($tableName)
-                    ->createQueryBuilder()
                 ;
             }
             else
@@ -158,5 +102,36 @@ trait FooBarTrait
         }
 
         return $objectMappings[ $tableName ];
+    }
+
+    /**
+     * @param $object
+     * @return array|null
+     * @throws \ReflectionException
+     * @throws \TYPO3\CMS\Extbase\Reflection\Exception
+     */
+    protected function getPersistableProperties($object)
+    {
+        $properties = null;
+
+        $objectName = get_class($object);
+        if(!isset($objectPropertyMapper[ $objectName ]))
+        {
+            $reflection = new ClassReflection($object);
+
+            $properties = [];
+            foreach($reflection->getProperties() as $property)
+            {
+                $propertyName = GeneralUtility::camelCaseToLowerCaseUnderscored($property->getName());
+                $value = $property->getValue($object);
+
+                if($value !== NULL)
+                {
+                    $properties[ $propertyName ] = $value;
+                }
+            }
+        }
+
+        return $properties;
     }
 }
