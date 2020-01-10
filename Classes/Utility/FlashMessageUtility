@@ -1,0 +1,59 @@
+<?php
+namespace Typoworx\FooBar\Utility;
+
+use \TYPO3\CMS\Core\Messaging\FlashMessage;
+use \TYPO3\CMS\Core\Messaging\FlashMessageService;
+
+/**
+ * Class FlashMessageUtility
+ * @package Mosaiq\MqTools\Utility
+ */
+class FlashMessageUtility
+{
+    // Aliases to minify used class-imports
+    const NOTICE = FlashMessage::NOTICE;
+    const INFO = FlashMessage::INFO;
+    const OK = FlashMessage::OK;
+    const WARNING = FlashMessage::WARNING;
+    const ERROR = FlashMessage::ERROR;
+
+    /**
+     * @var self
+     */
+    protected static $_instance;
+
+    public static function getInstance() : self
+    {
+        if(self::$_instance !== null)
+        {
+            return self::$_instance;
+        }
+
+        self::$_instance = StaticObjectManager::getInstance(__CLASS__);
+    }
+
+    public static function addMessage(string $message, string $title = '', int $severity, string $queueIdentifier = '')
+    {
+        $message = StaticObjectManager::getEmptyObject(
+            FlashMessage::class,
+            $message,
+            $title,
+            $severity
+            , // [optional] the severity defaults to FlashMessage::OK
+            true // [optional] whether the message should be stored in the session or only in the FlashMessageQueue object (default is false)
+        );
+
+        $flashMessageService = StaticObjectManager::get(FlashMessageService::class);
+
+        if(empty($queueIdentifier))
+        {
+            $messageQueue = $flashMessageService->getMessageQueueByIdentifier();
+        }
+        else
+        {
+            $messageQueue = $flashMessageService->getMessageQueueByIdentifier($queueIdentifier);
+        }
+
+        $messageQueue->enqueue($message);
+    }
+}
