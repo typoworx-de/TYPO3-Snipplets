@@ -2,6 +2,7 @@
 namespace Typoworx\FooBar\Utility;
 
 use Composer\Autoload\ClassLoader;
+use TYPO3\CMS\Core\Core\Bootstrap;
 
 /**
  * Class NamespaceUtility
@@ -85,7 +86,7 @@ class NamespaceUtility
      * @return string|null
      * @throws \TYPO3\CMS\Core\Exception
      */
-    protected function getExtensionNamespacePrefix(string $extensionKey) :? string
+    public static function getExtensionNamespacePrefix(string $extensionKey) :? string
     {
         static $extensionKeys;
 
