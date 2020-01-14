@@ -6,7 +6,6 @@ use \TYPO3\CMS\Core\Messaging\FlashMessageService;
 
 /**
  * Class FlashMessageUtility
- * @package Mosaiq\MqTools\Utility
  */
 class FlashMessageUtility
 {
