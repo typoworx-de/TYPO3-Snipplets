@@ -10,8 +10,8 @@ use TYPO3\CMS\Core\Utility\ClassNamingUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\Generic\Mapper\DataMapper;
 
-use Tyoworx\FooBar\Utility\StaticObjectManager;
-use Tyoworx\FooBar\Domain\Collection\ObjectCollection;
+use Typoworx\FooBar\Utility\StaticObjectManager;
+use Typoworx\FooBar\Domain\Collection\ObjectCollection;
 
 /**
  * Class DoctrineOrmUtilities
@@ -21,7 +21,7 @@ class DoctrineOrmUtilities
     const DATE_TIME_UTC = 'Y-m-d H:i:s';
 
     /**
-     * @var array <\Tyoworx\FooBar\Domain\Orm\DoctrineOrmUtilities>
+     * @var array <\Typoworx\FooBar\Domain\Orm\DoctrineOrmUtilities>
      */
     protected static $_instances = [];
 
