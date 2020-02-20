@@ -1,0 +1,60 @@
+<html
+	xmlns:f="https://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+    xmlns:v="https://typo3.org/ns/FluidTYPO3\Vhs\ViewHelpers"
+	xmlns:w1cs="https://typo3.org/ns/W1/W1Customerservice/ViewHelpers"
+	data-namespace-typo3-fluid="true"
+>
+    <!--
+    Usage:
+    <f:render
+        section="renderResponsiveImage"
+        arguments="{
+            image: 'my-image-path',
+            defaultBreakpoint: {
+                maxWidth: 336,
+                maxHeight: 180
+            },
+            breakpoints: {
+                x1: {
+                    maxWidth: 150,
+                    maxHeight: 96
+                },
+                x2: {
+                    maxWidth: 336,
+                    maxHeight: 180
+                }
+            }
+        }"
+    />
+    -->
+	<f:section name="renderResponsiveImage">
+		<f:if condition="{image} && {breakpoints -> f:count() > 0">
+			<f:variable name="srcset" value="" />
+
+            <f:comment><!-- Cheack for fallback on breakpoints if unset --></f:comment>
+			<f:if condition="!{defaultBreakpoint}">
+				{v:iterator.first(haystack: '{breakpoints}') -> f:variable(name: 'defaultBreakpoint')}
+			</f:if>
+
+			<f:for each="{breakpoints}" as="breakpoint" key="identifier" iteration="iterator">
+				{f:uri.image(
+					src: '{image}',
+					maxWidth: '{breakpoint.maxWidth}',
+					maxHeight: '{breakpoint.maxHeight}'
+				)
+				-> v:format.append(add: ' {identifier},')
+				-> v:format.prepend(add: ' {srcset} ')
+				-> f:variable(name: 'srcset')}
+			</f:for>
+		</f:if>
+
+		<f:image
+			src="{image}"
+			maxWidth="{defaultBreakpoint.maxWidth}"
+			maxHeight="{defaultBreakpoint.maxHeight}"
+			additionalAttributes="{srcset: '{srcset -> v:format.trim(characters: \', \')}'}"
+			alt="{alt}"
+			title="{title}"
+		/>
+	</f:section>
+</html>
