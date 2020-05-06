@@ -6,8 +6,17 @@
    WHERE CType LIKE "mqlayout_%" AND not deleted
    GROUP BY CType
    ```
-   
-2. Migrate FluidContent to Flux
+2. Migrate FluidPages to Flux
+   ```mysql
+   UPDATE `pages`
+     SET backend_layout="flux__grid", backend_layout_next_level="flux__grid"
+   WHERE
+     backend_layout="fluidpages__fluidpages"
+     OR backend_layout_next_level="fluidpages__fluidpages"
+     AND NOT deleted="1"
+   ```
+
+3. Migrate FluidContent to Flux
    ```mysql
    ALTER TABLE `tt_content` ADD `zzz_tx_fed_fcefile` VARCHAR(255) NOT NULL AFTER `tx_fed_fcefile`;
    
