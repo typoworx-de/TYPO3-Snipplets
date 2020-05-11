@@ -19,12 +19,20 @@
 
 2.2 Migrate/Refactor Template-Provider Extensions (optional if required)
    ```mysql
+   # Backup tx_fed_page_controller_action & tx_fed_page_controller_action_sub
+   ALTER TABLE `pages` ADD `zzz_tx_fed_page_controller_action` TEXT NOT NULL;
+   UPDATE `pages` SET `zzz_tx_fed_page_controller_action` = `tx_fed_page_controller_action`;
+
+   ALTER TABLE `pages` ADD `zzz_tx_fed_page_controller_action_sub` TEXT NOT NULL;
+   UPDATE `pages` SET `zzz_tx_fed_page_controller_action_sub` = `tx_fed_page_controller_action_sub`;
+   
    UPDATE `pages`
    SET
-      tx_fed_page_controller_action = REPLACE(tx_fed_page_controller_action, '{ProviderExtensionKey}', '{Vendor}.{ProviderExtensionKeyWithCamelCase}'),
-      tx_fed_page_controller_action_sub = REPLACE(tx_fed_page_controller_action_sub, '{ProviderExtensionKey}', '{Vendor}.{ProviderExtensionKeyWithCamelCase}')
-   WHERE `tx_fed_page_controller_action` != '' OR `tx_fed_page_controller_action_sub` != ''
+      tx_fed_page_controller_action = REPLACE(zzz_tx_fed_page_controller_action, '{ProviderExtensionKey}', '{Vendor}.{ProviderExtensionKeyWithCamelCase}'),
+      tx_fed_page_controller_action_sub = REPLACE(zzz_tx_fed_page_controller_action_sub, '{ProviderExtensionKey}', '{Vendor}.{ProviderExtensionKeyWithCamelCase}')
+   WHERE `zzz_tx_fed_page_controller_action` != '' OR `zzz_tx_fed_page_controller_action_sub` != ''
    ```
+
 3. Migrate FluidContent to Flux
    ```mysql
    ALTER TABLE `tt_content` ADD `zzz_tx_fed_fcefile` VARCHAR(255) NOT NULL AFTER `tx_fed_fcefile`;
