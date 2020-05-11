@@ -34,6 +34,8 @@
    ```
 
 3. Migrate FluidContent to Flux
+
+3.1 Fluidcontent Snippet #1
    ```mysql
    ALTER TABLE `tt_content` ADD `zzz_tx_fed_fcefile` VARCHAR(255) NOT NULL AFTER `tx_fed_fcefile`;
    
@@ -54,6 +56,33 @@
     tx_fed_fcefile=REPLACE(zzz_tx_fed_fcefile, "{ProviderExtensionKey}:", "{Vendor}.{ProviderExtensionKeyWithCamelCase}:")
    WHERE `tx_fed_fcefile`!=""
    ```
+
+3.2 Fluidcontent Snippet #2
+   ```mysql
+     ALTER TABLE `tt_content` ADD `zzz_tx_fed_fcefile` TEXT NOT NULL;
+     UPDATE `tt_content` SET `zzz_tx_fed_fcefile` = `tx_fed_fcefile`;
+     
+     SET @extensionKey = 'ciko_config';
+     SET @extensionKeyLowercased = REPLACE(@extensionKey, '_', '');
+
+     SET @vendorName = 'Sit';
+     SET @providerExtensionName = 'SitConfigherscheid';
+     SET @providerExtensionNameLowerCase = LOWER(@providerExtensionName);
+
+     UPDATE `tt_content`
+     SET
+     `CType` = LOWER(CONCAT(
+         @providerExtensionNameLowerCase,
+         '_',
+         REPLACE(
+             REPLACE(`zzz_tx_fed_fcefile`, CONCAT(@extensionKey, ':'), ''),
+             '.html',
+             ''
+         )
+     ))
+     WHERE `zzz_CType` = "fluidcontent_content";
+     ```   
+   
 4. RealURL -> Slug Migration
    
    Slug-Migration may quit with error "missing uid on tx_realurl_pathcache".
