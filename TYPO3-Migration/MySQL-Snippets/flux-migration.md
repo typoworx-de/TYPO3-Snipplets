@@ -3,10 +3,11 @@
 1. Analyse Template-Usage
    ```mysql
    SELECT CType, COUNT(CType) total_usage, SUM(hidden=1) AS hidden_elements FROM `tt_content`
-   WHERE CType LIKE "mqlayout_%" AND not deleted
+   WHERE CType LIKE "{ProviderExtensionKey@Lowercase-Without-Dashes}_%" AND not deleted
    GROUP BY CType
    ```
 2. Migrate FluidPages to Flux
+2.1
    ```mysql
    UPDATE `pages`
      SET backend_layout="flux__grid", backend_layout_next_level="flux__grid"
@@ -16,6 +17,14 @@
      AND NOT deleted="1"
    ```
 
+2.2 Migrate/Refactor Template-Provider Extensions (optional if required)
+   ```mysql
+   UPDATE `pages`
+   SET
+      tx_fed_page_controller_action = LOWER(REPLACE(tx_fed_page_controller_action, '{OldProviderExtensionKey}', '{NewProviderExtensionKey}')),
+      tx_fed_page_controller_action_sub = LOWER(REPLACE(tx_fed_page_controller_action_sub, '{OldProviderExtensionKey}', '{NewProviderExtensionKey}'))
+   WHERE `tx_fed_page_controller_action` != '' OR `tx_fed_page_controller_action_sub` != ''
+   ```
 3. Migrate FluidContent to Flux
    ```mysql
    ALTER TABLE `tt_content` ADD `zzz_tx_fed_fcefile` VARCHAR(255) NOT NULL AFTER `tx_fed_fcefile`;
