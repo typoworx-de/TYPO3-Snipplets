@@ -21,8 +21,8 @@
    ```mysql
    UPDATE `pages`
    SET
-      tx_fed_page_controller_action = LOWER(REPLACE(tx_fed_page_controller_action, '{OldProviderExtensionKey}', '{NewProviderExtensionKey}')),
-      tx_fed_page_controller_action_sub = LOWER(REPLACE(tx_fed_page_controller_action_sub, '{OldProviderExtensionKey}', '{NewProviderExtensionKey}'))
+      tx_fed_page_controller_action = REPLACE(tx_fed_page_controller_action, '{ProviderExtensionKey}', '{Vendor}.{ProviderExtensionKeyWithCamelCase}'),
+      tx_fed_page_controller_action_sub = REPLACE(tx_fed_page_controller_action_sub, '{ProviderExtensionKey}', '{Vendor}.{ProviderExtensionKeyWithCamelCase}')
    WHERE `tx_fed_page_controller_action` != '' OR `tx_fed_page_controller_action_sub` != ''
    ```
 3. Migrate FluidContent to Flux
@@ -45,4 +45,11 @@
      )),
     tx_fed_fcefile=REPLACE(zzz_tx_fed_fcefile, "{ProviderExtensionKey}:", "{Vendor}.{ProviderExtensionKeyWithCamelCase}:")
    WHERE `tx_fed_fcefile`!=""
+   ```
+4. RealURL -> Slug Migration
+   
+   Slug-Migration may quit with error "missing uid on tx_realurl_pathcache".
+   
+   ```mysql
+   RENAME TABLE `project_sit_herscheid_typo3-v9`.`tx_realurl_pathcache` TO `project_sit_herscheid_typo3-v9`.`zzz_tx_realurl_pathcache`;
    ```
