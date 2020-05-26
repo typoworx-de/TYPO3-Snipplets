@@ -1,5 +1,5 @@
 <?php
-namespace Mosaiq\MqLayout\ViewHelpers\Fluid\Uri;
+namespace FooBar\FoobarExtension\ViewHelpers\Fluid\Uri;
 
 use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
@@ -8,7 +8,7 @@ use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
  * Class ImageViewHelper
  * Overrides Fluid f:image silencing the annoying exceptions
  *
- * @package Mosaiq\MqLayout\ViewHelpers\Fluid
+ * @package FooBar\FoobarExtension\ViewHelpers\Fluid
  */
 class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\Uri\ImageViewHelper
 {
