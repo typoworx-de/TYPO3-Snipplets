@@ -1,5 +1,5 @@
 <?php
-namespace FooBar\FooBarExtension\ViewHelpers\Fluid;
+namespace FooBar\FoobarExtension\ViewHelpers\Fluid;
 
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
 
@@ -7,10 +7,15 @@ use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
  * Class ImageViewHelper
  * Overrides Fluid f:image silencing the annoying exceptions
  *
- * @package FooBar\FooBarExtension\ViewHelpers\Fluid
+ * @package FooBar\FoobarExtension\ViewHelpers\Fluid
  */
 class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\ImageViewHelper
 {
+    /**
+     * @var bool
+     */
+    public static $forceEnableDebug = false;
+
     /**
      * @var bool
      */
@@ -23,6 +28,7 @@ class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\ImageViewHelper
     public function initializeArguments()
     {
         parent::initializeArguments();
+        $this->registerArgument('debug', 'bool', 'Explicitly allow Debugging-Messages', false, self::$forceEnableDebug);
         $this->registerArgument('throwException', 'bool', 'Explicitly allow PHP-Exceptions', false, self::$forceExcplicitExceptions);
     }
 
@@ -45,7 +51,7 @@ class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\ImageViewHelper
             {
                 throw $e;
             }
-            else
+            else if($arguments['debug'] === true || self::$forceEnableDebug === true)
             {
                 return sprintf(
                     '<span class="image-exception" data-error-message="%s" data-error-code="%d">Error loading image!</span>',
