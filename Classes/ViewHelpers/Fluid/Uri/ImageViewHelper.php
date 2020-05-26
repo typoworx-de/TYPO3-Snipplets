@@ -1,5 +1,5 @@
 <?php
-namespace FooBar\FooBarExtension\ViewHelpers\Fluid\Uri;
+namespace Mosaiq\MqLayout\ViewHelpers\Fluid\Uri;
 
 use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
@@ -8,10 +8,15 @@ use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
  * Class ImageViewHelper
  * Overrides Fluid f:image silencing the annoying exceptions
  *
- * @package FooBar\FooBarExtension\ViewHelpers\Fluid
+ * @package Mosaiq\MqLayout\ViewHelpers\Fluid
  */
 class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\Uri\ImageViewHelper
 {
+    /**
+     * @var bool
+     */
+    public static $forceEnableDebug = false;
+
     /**
      * @var bool
      */
@@ -24,6 +29,7 @@ class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\Uri\ImageViewHelper
     public function initializeArguments()
     {
         parent::initializeArguments();
+        $this->registerArgument('debug', 'bool', 'Explicitly allow Debugging-Messages', false, self::$forceEnableDebug);
         $this->registerArgument('throwException', 'bool', 'Explicitly allow PHP-Exceptions', false, self::$forceExcplicitExceptions);
     }
 
@@ -46,7 +52,7 @@ class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\Uri\ImageViewHelper
             {
                 throw $e;
             }
-            else
+            else if($arguments['debug'] === true || self::$forceEnableDebug === true)
             {
                 DebuggerUtility::var_dump(
                     [
