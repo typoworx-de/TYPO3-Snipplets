@@ -56,6 +56,7 @@ class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\Uri\ImageViewHelper
                             $e->getCode(),
                         ],
                         'Arguments' => $arguments,
+                        'ControllerName' => $renderingContext->getControllerName(),
                         'TemplatePaths' => $renderingContext->getTemplatePaths()->getTemplateRootPaths(),
                     ],
                      __METHOD__
