@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# Relative Path to our Document-Root
+typo3version=9;
+docRelPath='../src/site';
+httpUserGroup='www-data:www-data';
+
+#---------------------------------------------------------------
+_pid=$$;
+runDir=$(dirname $0);
+docRoot="${runDir}/${docRelPath}";
+php7=$(which php7.{2,1,0} | head -n 1);
+
+
+source ${runDir}/bashelor.inc.sh;
+
+#if [[ -z "${TYPO3_CONTEXT}" && -f "${runDir}../.env" ]];
+#then
+#  echo "Loading Environment from ${runDir}../.env";
+#  $(cat "${runDir}../.env") $0 $@;
+#  exit $?;
+#fi
+
+function forceExit()
+{
+    runWizardCareful backend:unlock
+    kill "${_pid}";
+}
+
+
+function runPostScript()
+{
+    postScript=$(dirname $0)"/"$(basename $0)".post.sh";
+    [[ -f "${postScript}" ]] && { (docRelPath="${docRelPath}" bash "${postScript}"); }
+}
+
+function flushTypo3Cache()
+{
+    message info 'Purging typo3temp/';
+    rm -rf "${docRoot}/typo3temp/*" || { message error 'failed'; exit 1; }
+    mkdir -p "${docRoot}/typo3temp/var/logs";
+    echo;
+}
+
+function typo3v9cli()
+{
+    [[ "${typo3version}" -ge 9 ]] || exit;
+    message info "Executing TYPO3 CLI: typo3 $@";
+    if [[ -f "${docRoot}/typo3/sysext/core/bin/typo3" ]];
+    then
+        (cd "${docRoot}"; ${php7} "typo3/sysext/core/bin/typo3" -vvv $@) || {
+            message error "Error running typo3/sysext/core/bin/typo3 ${@}!";
+            return 1;
+        };
+    fi
+}
+
+function typo3v9cliCareful()
+{
+    [[ "${typo3version}" -ge 9 ]] || exit;
+    message info "Executing TYPO3 CLI: typo3 $@";
+    if [[ -f "${docRoot}/typo3/sysext/core/bin/typo3" ]];
+    then
+        (cd "${docRoot}"; ${php7} "typo3/sysext/core/bin/typo3" -vvv $@) || {
+            message error "Error running typo3/sysext/core/bin/typo3 ${@}!";
+            forceExit;
+        };
+    fi
+}
+
+function runWizard()
+{
+    message info "Running Wizard ${@}";
+    (${php7} ${docRoot}/typo3conf/ext/typo3_console/typo3cms $@) || {
+        message error "Error running ${@}!"; return 1;
+    };
+
+    echo;
+    return 0;
+}
+
+function runWizardCareful()
+{
+    message info "Running Wizard ${@}";
+    (${php7} ${docRoot}/typo3conf/ext/typo3_console/typo3cms $@) || {
+        message error "Error running typo3cms ${@}!";
+        forceExit;
+    };
+
+    echo;
+    return 0;
+}
+
+
+[[ "${typo3version}" -ge 9 ]] && {
+    echo "Detected TYPO3 >=9.0";
+} || {
+    echo "Detected TYPO3 =< 8.9";
+}
+
+# Generic File-Based Cache-Flush
+flushTypo3Cache;
+runWizard cache:flush;
+
+# Pre Wizards
+[[ "${typo3version}" -ge 9 ]] && {
+    typo3v9cli dumpautoload;
+} || {
+    runWizard dumpautoload;
+}
+
+runPostScript;
