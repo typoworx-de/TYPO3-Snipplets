@@ -1,0 +1,19 @@
+#!/bin/bash
+docRelPath='../src/site';
+
+#---------------------------------------------------------------
+
+runDir=$(dirname $0);
+docRoot="${runDir}/${docRelPath}";
+
+# Check typo3_console & typo3cms exists
+[[ ! -f "${docRoot}/typo3/sysext/core/bin/typo3" ]] || {
+  echo "Your TYPO3 Version doesn't seem to support typo3 CLI-Script!";
+  exit 1;
+}
+
+# Check which PHP-Version we are running on
+echo -e "Running on PHP \e[32m$(basename ${php7})\e[0m";
+
+(cd "${docRoot}"; typo3/sysext/core/bin/typo3 $@)
+exit $?
