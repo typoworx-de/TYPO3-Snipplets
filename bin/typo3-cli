@@ -12,8 +12,5 @@ docRoot="${runDir}/${docRelPath}";
   exit 1;
 }
 
-# Check which PHP-Version we are running on
-echo -e "Running on PHP \e[32m$(basename ${php7})\e[0m";
-
 (cd "${docRoot}"; typo3/sysext/core/bin/typo3 $@)
 exit $?
