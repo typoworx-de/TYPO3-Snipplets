@@ -5,6 +5,7 @@ docRelPath='../src/site';
 
 runDir=$(dirname $0);
 docRoot="${runDir}/${docRelPath}";
+php7=$(which php7.{2,1,0} | head -n 1);
 
 # Check typo3_console & typo3cms exists
 [[ ! -f "${docRoot}/typo3/sysext/core/bin/typo3" ]] || {
@@ -12,5 +13,8 @@ docRoot="${runDir}/${docRelPath}";
   exit 1;
 }
 
-(cd "${docRoot}"; typo3/sysext/core/bin/typo3 $@)
+# Check which PHP-Version we are running on
+echo -e "Running on PHP \e[32m$(basename ${php7})\e[0m";
+
+(cd "${docRoot}"; ${php7} typo3/sysext/core/bin/typo3 $@)
 exit $?
