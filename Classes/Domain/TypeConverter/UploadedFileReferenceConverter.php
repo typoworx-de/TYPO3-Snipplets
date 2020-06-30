@@ -122,6 +122,11 @@ class UploadedFileReferenceConverter extends AbstractTypeConverter
     {
         $converted = null;
 
+        if(!count($source))
+        {
+            return;
+        }
+
         $targetSubType = null;
         if (strpos($targetType, '<') !== false && preg_match('~([^\<]+)<?([^\>]+)>?~', $targetType, $match))
         {
@@ -130,15 +135,61 @@ class UploadedFileReferenceConverter extends AbstractTypeConverter
 
             if ($targetSubType !== $this->getSupportedTargetType())
             {
-                return null;
+                return;
             }
         }
 
         try
         {
-            if (!$this->checkUploadPayload($source))
+            if ($this->checkUploadPayload($source))
             {
-                return null;
+                try
+                {
+                    $resource = $this->processFalUpload($source, $configuration);
+
+                    if ($targetType === ObjectStorage::class)
+                    {
+                        $objectStorage = new ObjectStorage();
+
+                        if ($resource !== null)
+                        {
+                            $objectStorage->attach($resource);
+                        }
+
+                        $converted = $objectStorage;
+                    }
+                    else
+                    {
+                        $converted = $resource;
+                    }
+                }
+                catch (\Throwable $e)
+                {
+                    return new Error($e->getMessage(), $e->getCode());
+                }
+            }
+            else
+            {
+                $objectStorage = new ObjectStorage();
+
+                foreach($source as $fileItem)
+                {
+                    try
+                    {
+                        $resource = $this->processFalUpload($fileItem, $configuration);
+
+                        if($resource !== null)
+                        {
+                            $objectStorage->attach($resource);
+                        }
+                    }
+                    catch (\Throwable $e)
+                    {
+                        return new Error($e->getMessage(), $e->getCode());
+                    }
+                }
+
+                $converted = $objectStorage;
             }
         }
         catch (\Throwable $e)
@@ -149,28 +200,6 @@ class UploadedFileReferenceConverter extends AbstractTypeConverter
             }
 
             return null;
-        }
-
-        try
-        {
-            $resource = $this->processFalUpload($source, $configuration);
-        }
-        catch (\Throwable $e)
-        {
-            throw $e;
-            return new Error($e->getMessage(), $e->getCode());
-        }
-
-        if ($targetType === ObjectStorage::class)
-        {
-            $objectStorage = new ObjectStorage();
-
-            if ($resource !== null)
-            {
-                $objectStorage->attach($resource);
-            }
-
-            return $objectStorage;
         }
 
         return $converted;
