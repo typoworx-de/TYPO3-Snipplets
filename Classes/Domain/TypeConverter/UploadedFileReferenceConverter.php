@@ -69,7 +69,7 @@ class UploadedFileReferenceConverter extends AbstractTypeConverter
     protected $targetType = ExtbaseFileReference::class;
 
     /**
-     * Take precedence over the available ObjectStorageConverter
+     * Prevent precedence over the available ObjectStorageConverter (low priority allowing manual-selection)
      *
      * @var int
      */
