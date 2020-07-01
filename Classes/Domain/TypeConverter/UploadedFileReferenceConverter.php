@@ -174,6 +174,11 @@ class UploadedFileReferenceConverter extends AbstractTypeConverter
 
                 foreach($source as $fileItem)
                 {
+                    if (!$this->checkUploadPayload($fileItem))
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         $resource = $this->processFalUpload($fileItem, $configuration);
