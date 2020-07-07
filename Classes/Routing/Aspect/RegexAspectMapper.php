@@ -60,10 +60,9 @@ class RegexAspectMapper implements StaticMappableAspectInterface
 
             if(empty($pattern) || $pattern === null)
             {
-                return false;
+                $return = false;
             }
-
-            if(substr($pattern, 0) !== substr($pattern, -1))
+            else if(substr($pattern, 0) !== substr($pattern, -1))
             {
                 if(in_array(substr($pattern, 0), ['!', '^', '(', '$']))
                 {
@@ -71,7 +70,10 @@ class RegexAspectMapper implements StaticMappableAspectInterface
                 }
             }
 
-            $return = preg_match($pattern, $value);
+            if(empty($pattern))
+            {
+                $return = preg_match($pattern, $value);
+            }
         }
         catch (\Throwable $e)
         {
