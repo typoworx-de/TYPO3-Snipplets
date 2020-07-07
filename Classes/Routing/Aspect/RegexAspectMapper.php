@@ -56,7 +56,12 @@ class RegexAspectMapper implements StaticMappableAspectInterface
 
         try
         {
-            $pattern = $this->regexPattern;
+            $pattern = trim($this->regexPattern);
+
+            if(empty($pattern) || $pattern === null)
+            {
+                return false;
+            }
 
             if(substr($pattern, 0) !== substr($pattern, -1))
             {
