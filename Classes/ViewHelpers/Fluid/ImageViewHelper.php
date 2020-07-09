@@ -37,7 +37,7 @@ class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\ImageViewHelper
      * @param \Closure $renderChildrenClosure
      * @param \TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface $renderingContext
      * @return mixed|string
-     * @throws \Exception
+     * @throws \Throwable
      */
     public static function renderStatic(array $arguments, \Closure $renderChildrenClosure, RenderingContextInterface $renderingContext)
     {
@@ -45,7 +45,7 @@ class ImageViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\ImageViewHelper
         {
             return parent::renderStatic($arguments, $renderChildrenClosure, $renderingContext);
         }
-        catch (\Exception $e)
+        catch (\Throwable $e)
         {
             if($arguments['throwException'] === true)
             {
