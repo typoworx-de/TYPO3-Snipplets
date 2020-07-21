@@ -88,5 +88,5 @@
    Slug-Migration may quit with error "missing uid on tx_realurl_pathcache".
    
    ```mysql
-   RENAME TABLE `project_sit_herscheid_typo3-v9`.`tx_realurl_pathcache` TO `project_sit_herscheid_typo3-v9`.`zzz_tx_realurl_pathcache`;
+   RENAME TABLE `tx_realurl_pathcache` TO `zzz_tx_realurl_pathcache`;
    ```
