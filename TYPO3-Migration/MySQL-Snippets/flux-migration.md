@@ -62,7 +62,7 @@
      ALTER TABLE `tt_content` ADD `zzz_tx_fed_fcefile` TEXT NOT NULL;
      UPDATE `tt_content` SET `zzz_tx_fed_fcefile` = `tx_fed_fcefile`;
      
-     SET @extensionKey = 'ciko_config';
+     SET @extensionKey = 'my_extension_name';
      SET @extensionKeyLowercased = REPLACE(@extensionKey, '_', '');
 
      SET @vendorName = 'Sit';
