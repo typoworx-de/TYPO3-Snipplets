@@ -66,7 +66,7 @@ class LocalDateTime extends DateTime
      * @param int $timestamp
      * @param \DateTimeZone|null $timezone
      * @param null $format
-     * @return \Mosaiq\MqProductsCustom\Domain\Type\LocalDateTime|null
+     * @return \Typoworx\FooBar\Domain\Type\LocalDateTime|null
      */
     public static function createFromTimestamp(int $timestamp , DateTimeZone $timezone = null, $format = null) :? self
     {
