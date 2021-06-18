@@ -1,7 +1,7 @@
 <?php
 $AppContext=$_SERVER['TYPO3_CONTEXT'];
 
-$proxyUri = 'https://www.sw-suedwest.de';
+$proxyUri = 'https://www.my-production-domain.de';
 
 $requestProto='http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '');
 $requestDomain=$_SERVER['SERVER_NAME'];
