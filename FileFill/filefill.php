@@ -15,7 +15,14 @@ if(!preg_match('~^(Development|Production/Staging)~', $AppContext))
     die();
 }
 
-if(!is_file($requestFile))
+if(is_file($requestFile))
+{
+    header(sprintf(
+        'Retry-After: %s',
+        gmdate('D, d M Y H:i:s', strtotime('+30 seconds')).' GMT')
+    );
+}
+else
 {
     if(!is_dir(dirname($requestFile)))
     {
