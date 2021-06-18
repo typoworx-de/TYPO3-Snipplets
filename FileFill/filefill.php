@@ -1,29 +1,15 @@
 <?php
-/**
-Add to .htaccess or vHost
+$AppContext=$_SERVER['TYPO3_CONTEXT'];
 
-# ----------------------------------------------------------------------
-# Stage-FileFiller
-# ----------------------------------------------------------------------
-<IfModule mod_rewrite.c>
-    RewriteCond %{REQUEST_URI} fileadmin/
-    RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} !-f
-    RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} !-d
-    RewriteRule .* filefill.php [L]
-    #RewriteRule ^(fileadmin/.*) filefill.php [L]
-</IfModule>
-*/
-
-$TYPO3_CONTEXT=$_SERVER['TYPO3_CONTEXT'];
-
-$proxyUri = 'https://www.my-production-page.de';
+$proxyUri = 'https://www.sw-suedwest.de';
 
 $requestProto='http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '');
 $requestDomain=$_SERVER['SERVER_NAME'];
 $requestUri = $_SERVER['REQUEST_URI'];
 $requestFile = $_SERVER['DOCUMENT_ROOT'] . $requestUri;
 
-if(!preg_match('~^(Development|Production/Staging)~', $TYPO3_CONTEXT))
+// Check Application-Context
+if(!preg_match('~^(Development|Production/Staging)~', $AppContext))
 {
     header('HTTP/1.0 404 Not Found');
     die();
