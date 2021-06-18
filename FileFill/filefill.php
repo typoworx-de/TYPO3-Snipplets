@@ -1,4 +1,22 @@
 <?php
+/**
+  Apache
+  -----------
+ .htaccess or vHost Snippet
+
+ ```
+ # ----------------------------------------------------------------------
+ # Stage-FileFiller (gkn)
+ # ----------------------------------------------------------------------
+ <IfModule mod_rewrite.c>
+    RewriteCond %{REQUEST_URI} fileadmin/
+    RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} !-f
+    RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} !-d
+    RewriteRule .* filefill.php [L]
+ </IfModule>
+ ```
+**/
+
 $AppContext=$_SERVER['TYPO3_CONTEXT'];
 
 $proxyUri = 'https://www.my-production-domain.de';
