@@ -1,3 +1,4 @@
+```
 # This file applies Content-Security-Policy (CSP) HTTP headers
 # to directories containing (user uploaded) resources like
 # /fileadmin/ or /uploads/
@@ -32,3 +33,4 @@
     #
     # =================================================================
 </IfModule>
+```
