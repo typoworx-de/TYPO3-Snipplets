@@ -27,4 +27,18 @@
         <post name="post-var" value="FooBar"/>
         <request name="request-var" value="FooBar"/>
     </php>
+    
+    <listeners>
+        <listener class="Foo\Bar\Tests\Base\TestListener" file="Base/TestListener.php"></listener>
+    </listeners>
+
+    <testsuites>
+        <testsuite name="unit">
+            <directory suffix="Test.php">Unit</directory>
+        </testsuite>
+
+        <testsuite name="functional">
+            <directory suffix="Test.php">Functional</directory>
+        </testsuite>
+    </testsuites>
 </phpunit>
