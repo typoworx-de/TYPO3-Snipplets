@@ -1,0 +1,30 @@
+<phpunit
+    backupGlobals="true"
+    backupStaticAttributes="false"
+    bootstrap="../../.Build/vendor/nimut/testing-framework/res/Configuration/UnitTestsBootstrap.php"
+    colors="true"
+    convertErrorsToExceptions="true"
+    convertWarningsToExceptions="true"
+    forceCoversAnnotation="false"
+    processIsolation="false"
+    stopOnError="false"
+    stopOnFailure="false"
+    stopOnIncomplete="false"
+    stopOnSkipped="false"
+    verbose="false"
+>
+    <!-- @doc https://phpunit.readthedocs.io/en/9.5/configuration.html#appendixes-configuration-php -->
+    <php>
+        <ini name="foo" value="bar"/>
+
+        <env name="CUSTOM_ENV" value="Foo Bar" />
+        <const name="CUSTOM_CONSTANT" value="bar"/>
+        <var name="my-global-bar" value="Foo Bar"/>
+
+        <server name="foo" value="bar"/>
+        <files name="foo" value="bar"/>
+        <cookie name="foo" value="bar"/>
+        <post name="post-var" value="FooBar"/>
+        <request name="request-var" value="FooBar"/>
+    </php>
+</phpunit>
