@@ -1,4 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <phpunit
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/7.5/phpunit.xsd"
     backupGlobals="true"
     backupStaticAttributes="false"
     bootstrap="../../.Build/vendor/nimut/testing-framework/res/Configuration/UnitTestsBootstrap.php"
@@ -13,9 +16,18 @@
     stopOnSkipped="false"
     verbose="false"
 >
-    <!-- @doc https://phpunit.readthedocs.io/en/9.5/configuration.html#appendixes-configuration-php -->
+    <!--
+    @doc https://phpunit.readthedocs.io/en/9.5/configuration.html#appendixes-configuration-php -->
+    @doc https://thephp.cc/presentations/2019-international-php-conference-spring-edition-phpunit-best-practices.pdf
+    -->
     <php>
+        <ini name="memory_limit" value="-1" />
         <ini name="display_errors" value="1" />
+        <ini name="error_reporting" value="-1" />
+        <ini name="log_errors_max_len" value="0" />
+        <ini name="xdebug.show_exception_trace" value="0" />
+
+        <!-- TYPO3 Environment -->
         <env name="TYPO3_CONTEXT" value="Testing" />
         
         <!--
@@ -34,18 +46,16 @@
         -->
     </php>
 
+    <!--
     <listeners>
         <!-- Deprecated for PhpUnit9.5 upwards, use TestHook -->
         <listener class="Foo\Bar\Tests\Base\TestListener" file="Base/TestListener.php"></listener>
     </listeners>
+    -->
 
     <testsuites>
-        <testsuite name="unit">
+        <testsuite name="default">
             <directory suffix="Test.php">Unit</directory>
-        </testsuite>
-
-        <testsuite name="functional">
-            <directory suffix="Test.php">Functional</directory>
         </testsuite>
     </testsuites>
 </phpunit>
