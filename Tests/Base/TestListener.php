@@ -6,6 +6,16 @@ use PHPUnit\Framework\Test;
 use PHPUnit\Framework\TestSuite;
 use PHPUnit\Framework\Warning;
 
+/**
+ * TestListener
+ * 
+ * @example
+ * <phpunit>
+ *   <listeners>
+     *   <listener class="Mosaiq\MqFormQueue\Tests\Base\TestListener" file="Base/TestListener.php"></listener>
+ *   </listeners>
+ * </phpunit>
+ */
 class TestListener implements \PHPUnit\Framework\TestListener
 {
     public function startTestSuite(TestSuite $suite) : void
