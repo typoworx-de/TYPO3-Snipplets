@@ -15,6 +15,11 @@
 >
     <!-- @doc https://phpunit.readthedocs.io/en/9.5/configuration.html#appendixes-configuration-php -->
     <php>
+        <ini name="display_errors" value="1" />
+        <env name="TYPO3_CONTEXT" value="Testing" />
+        
+        <!--
+        examplex
         <ini name="foo" value="bar"/>
 
         <env name="CUSTOM_ENV" value="Foo Bar" />
@@ -26,9 +31,11 @@
         <cookie name="foo" value="bar"/>
         <post name="post-var" value="FooBar"/>
         <request name="request-var" value="FooBar"/>
+        -->
     </php>
-    
+
     <listeners>
+        <!-- Deprecated for PhpUnit9.5 upwards, use TestHook -->
         <listener class="Foo\Bar\Tests\Base\TestListener" file="Base/TestListener.php"></listener>
     </listeners>
 
