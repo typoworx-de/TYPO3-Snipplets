@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace Foo\BarBase\EventListener\AssetRenderer;
+namespace Mosaiq\MqSiteBase\EventListener\AssetRenderer;
 
 use TYPO3\CMS\Core\Registry;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
@@ -8,7 +8,6 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 
 use TYPO3\CMS\Core\Core\Environment;
-use TYPO3\CMS\Core\Page\AssetCollector;
 use TYPO3\CMS\Core\Cache\Event\CacheFlushEvent;
 use TYPO3\CMS\Core\Cache\Event\CacheWarmupEvent;
 use TYPO3\CMS\Core\Page\Event\AbstractBeforeAssetRenderingEvent;
@@ -33,16 +32,13 @@ use TYPO3\CMS\Core\Page\Event\AbstractBeforeAssetRenderingEvent;
  *       event: TYPO3\CMS\Core\Cache\Event\CacheFlushEvent
  *     - name: event.listener
  *       identifier: foo/barsite/asset-post-processing/InjectAssets
- *       event: TYPO3\CMS\Core\Page\Event\BeforeJavaScriptsRenderingEvent
- *     - name: event.listener
- *       identifier: foo/barsite/asset-post-processing/InjectAssets
  *       event: TYPO3\CMS\Core\Page\Event\BeforeStylesheetsRenderingEvent
  **/
 final class MediaAssets
 {
+    private int $cacheTTL = 300;
     private bool $skipProcessing = false;
     private array $packageNamespace;
-    private string $webAssetsPath;
     private string $webAssetExtensionPath;
     private string $extensionResourcePublicPath;
 
@@ -52,7 +48,6 @@ final class MediaAssets
     private ?Registry $registry;
     private string $registryNamespace;
 
-    protected ?AssetCollector $assetCollector = null;
     protected null|AbstractBeforeAssetRenderingEvent|CacheFlushEvent|CacheWarmupEvent $event = null;
 
 
@@ -63,6 +58,7 @@ final class MediaAssets
         if ($event instanceof CacheWarmupEvent)
         {
             // @ToDo Garbage Collector!
+            $this->warmup();
         }
         else if ($event instanceof CacheFlushEvent)
         {
@@ -70,29 +66,7 @@ final class MediaAssets
         }
         else if ($event instanceof AbstractBeforeAssetRenderingEvent)
         {
-            if ($this->skipProcessing === true)
-            {
-                return;
-            }
-
-            // Make shure the processing isn't fired twice
-            $this->skipProcessing = true;
-
-            $isGenerated = $this->registry->get($this->registryNamespace, 'is_generated', null);
-            if ($isGenerated instanceof \DateTime)
-            {
-                $ttl = (new \DateTime())->modify('+30s');
-                if ($isGenerated < $ttl)
-                {
-                    return;
-                }
-            }
-
-            $this->registry->set($this->registryNamespace, 'is_cached', true);
-            $this->registry->set($this->registryNamespace, 'is_generated', new \DateTime());
-
-            $this->assetCollector = $event->getAssetCollector();
-            $this->providePublicResources();
+            $this->warmup();
         }
         else
         {
@@ -104,26 +78,71 @@ final class MediaAssets
         ?string $package = null,
         array $allowedExtensions = [],
         bool $allowDefaultGFX = true,
-        array $ignoredPattern = null
+        array $ignoredPattern = null,
+        int $cacheTTL = 300
     )
     {
         $this->registry = GeneralUtility::makeInstance(Registry::class);
         $this->registryNamespace = sprintf('%s::MediaAssets', $package);
-        $this->skipProcessing = (bool)$this->registry->get($this->registryNamespace, 'is_cached', false);
+        $this->cacheTTL = $cacheTTL;
 
-        if ($this->skipProcessing === false)
+        if ($this->skip() === false)
         {
             $this->ignoredPattern = $ignoredPattern;
 
             $this->prepare(
                 package: $package,
                 allowedExtensions: $allowedExtensions,
-                allowDefaultGFX: $allowDefaultGFX
+                allowDefaultGFX: $allowDefaultGFX,
             );
         }
     }
 
-    private function prepare(string $package = null, ?array $allowedExtensions, bool $allowDefaultGFX = true) : void
+    protected function skip() : bool
+    {
+        if ($this->skipProcessing === true)
+        {
+            return true;
+        }
+
+        $now = (new \DateTime());
+        $this->skipProcessing = (bool)$this->registry->get($this->registryNamespace, 'is_cached', false);
+
+        if ($this->skipProcessing === true)
+        {
+            $isGenerated = $this->registry->get($this->registryNamespace, 'is_generated', null);
+
+            // Check if cache has invalidated
+            if ($isGenerated instanceof \DateTime)
+            {
+                $isGenerated->modify(sprintf('+%d seconds', $this->cacheTTL ?? 300));
+
+                if ($isGenerated < $now)
+                {
+                    $this->skipProcessing = false;
+                    $this->registry->set($this->registryNamespace, 'is_cached', false);
+
+                    return false;
+                }
+            }
+        }
+
+        $this->skipProcessing = true;
+        $this->registry->get($this->registryNamespace, 'is_generated', $now);
+
+
+        return false;
+    }
+
+    protected function warmup() : void
+    {
+        // Make shure the processing isn't fired twice
+        $this->skipProcessing = true;
+
+        $this->providePublicResources();
+    }
+
+    private function prepare(string $package, ?array $allowedExtensions, bool $allowDefaultGFX = true) : void
     {
         [$vendor, $packageName] = explode('\\', $package ?? __NAMESPACE__, 3);
         $extensionName = GeneralUtility::camelCaseToLowerCaseUnderscored($packageName);
@@ -136,13 +155,13 @@ final class MediaAssets
         }
         $this->configureAllowedMediaTypes(allowDefaultGFX: $allowDefaultGFX);
 
-        $this->webAssetsPath = sprintf('%s/_assets', Environment::getPublicPath());
-        if (!is_dir($this->webAssetsPath) && !file_exists($this->webAssetsPath))
+        $webAssetsPath = sprintf('%s/_assets', Environment::getPublicPath());
+        if (!is_dir($webAssetsPath) && !file_exists($webAssetsPath))
         {
-            mkdir($this->webAssetsPath);
+            mkdir($webAssetsPath);
         }
 
-        $this->webAssetExtensionPath = sprintf('%s/%s/%s', $this->webAssetsPath, strtolower($vendor), $extensionName);
+        $this->webAssetExtensionPath = sprintf('%s/%s/%s', $webAssetsPath, strtolower($vendor), $extensionName);
     }
 
     protected function configureAllowedMediaTypes(bool $allowDefaultGFX = true)
@@ -168,7 +187,7 @@ final class MediaAssets
 
     protected function providePublicResources() : void
     {
-        if (!$this->webAssetsPath)
+        if (!$this->skip() === true)
         {
             return;
         }
@@ -207,6 +226,8 @@ final class MediaAssets
 
             self::createResourceLink(file: $file);
         }
+
+        $this->registry->set($this->registryNamespace, 'is_cached', true);
     }
 
     private function createResourceLink(\SplFileInfo $file) : void
@@ -232,3 +253,4 @@ final class MediaAssets
         }
     }
 }
+
