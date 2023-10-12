@@ -1,0 +1,112 @@
+<?php
+declare(strict_types=1);
+namespace Foo\Bar\ViewHelpers;
+
+/**
+ * This is an alias only to respect namespace separation for
+ * <f: /> (Fluid) vs <fbar: /> (FooBar Site-Package)
+ */
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
+use TYPO3Fluid\Fluid\View\Exception\InvalidSectionException;
+
+/**
+ * Fluid Usage:
+ * <fbar:render partial="Foo/Bar.html" extension="fbar_site" arguments="{_all}" />
+ * or
+ * <fbar:render partial="EXT:fbar_site/ContentElement/FooBar.html" arguments="{_all}" />
+ */
+class RenderViewHelper extends \TYPO3Fluid\Fluid\ViewHelpers\RenderViewHelper
+{
+    public function initializeArguments() : void
+    {
+        parent::initializeArguments();
+
+        $this->registerArgument('extension', 'string', 'Extension-Key');
+        $this->registerArgument('childContentAs', 'string', 'render Child-Nodes as Variable');
+    }
+
+    public static function renderStatic(array $arguments, \Closure $renderChildrenClosure, RenderingContextInterface $renderingContext) :? string
+    {
+        /*
+         * Check if we try to use 3rd-party Partial from other package
+         */
+        $extensionKey = null;
+        if (!empty($arguments['extension']))
+        {
+            $extensionKey = $arguments['extension'];
+            $path = $arguments['partial'];
+        }
+        else if (!empty($arguments['partial']) && str_starts_with($arguments['partial'], 'EXT:'))
+        {
+            [$extensionKey, $path] = explode('/', $arguments['partial'], 2);
+            [, $extensionKey] = explode(':', $extensionKey);
+        }
+
+        $isOptional = $arguments['optional'] ?? false;
+        $localRenderingContext = clone $renderingContext;
+        $localVariableProvider = $renderingContext->getVariableProvider();
+        $viewHelperVariableContainer = $localRenderingContext->getViewHelperVariableContainer();
+
+        if (!empty($extensionKey) && !empty($path))
+        {
+            $extensionPath = ExtensionManagementUtility::extPath($extensionKey);
+
+            if (!empty($arguments['template']))
+            {
+                $templateRootPaths = $localRenderingContext->getTemplatePaths()->getTemplateRootPaths();
+                $templateRootPaths[] = sprintf('%s/Resources/Private/Templates/', $extensionPath);
+                $localRenderingContext->getTemplatePaths()->setTemplateRootPaths($templateRootPaths);
+
+                $arguments['partial'] = str_replace('Resources/Private/Templates/', '', $path);
+            }
+            else if (!empty($arguments['partial']))
+            {
+                $partialRootPaths = $localRenderingContext->getTemplatePaths()->getPartialRootPaths();
+                $partialRootPaths[] = sprintf('%s/Resources/Private/Partials/', $extensionPath);
+                $localRenderingContext->getTemplatePaths()->setPartialRootPaths($partialRootPaths);
+
+                $arguments['partial'] = str_replace('Resources/Private/Partials/', '', $path);
+            }
+        }
+
+        $renderedClosure = $renderChildrenClosure();
+
+        if ($renderedClosure !== null)
+        {
+            if (!empty($arguments['childContentAs']))
+            {
+                $localVariableProvider->add($arguments['childContentAs'], $renderedClosure);
+            }
+
+            $viewHelperVariableContainer->addOrUpdate(RenderViewHelper::class, 'delegateRenderedCollection', $renderedClosure);
+        }
+
+        try
+        {
+            // We need to trick out here to catch NULL return's
+            $arguments['optional'] = false;
+            $return = parent::renderStatic($arguments, $renderChildrenClosure, $localRenderingContext);
+
+            $viewHelperVariableContainer->remove(RenderViewHelper::class, 'delegateRenderedCollection');
+        }
+        catch(InvalidSectionException $e)
+        {
+            if ($isOptional === false)
+            {
+                throw $e;
+            }
+
+            $return = null;
+        }
+
+        if (!empty($arguments['contentAs']))
+        {
+            $localRenderingContext->getVariableProvider()->add($arguments['contentAs'], $return);
+
+            $return = null;
+        }
+
+        return $return;
+    }
+}
