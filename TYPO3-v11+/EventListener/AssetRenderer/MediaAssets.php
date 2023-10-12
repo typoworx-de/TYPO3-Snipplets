@@ -21,6 +21,7 @@ use TYPO3\CMS\Core\Page\Event\AbstractBeforeAssetRenderingEvent;
  *     $allowDefaultGFX: true
  *     $allowedExtensions: ['css', 'map']
  *     $ignoredPattern:
+ *       - ~\~~
  *       - ~/Build/~
  *       - ~/Backend/~
  *   tags:
