@@ -65,4 +65,42 @@ class FrontendUtility
     {
         return $renderingContext?->getRequest()?->getAttribute('currentContentObject');
     }
+
+    protected static function getServerRequest() :? ServerRequest
+    {
+        return $GLOBALS['TYPO3_REQUEST'];
+    }
+
+    public static function getSite() : null|SiteInterface|Site
+    {
+        return static::getServerRequest()?->getAttribute('site');
+    }
+
+    public static function getSiteLanguage() :? SiteLanguage
+    {
+        return static::getServerRequest()?->getAttribute('language');
+    }
+
+    public static function translate(string $key, ?string $extensionName = null, ?array $arguments = null, ?string $languageKey = null, ?array $alternativeLanguageKeys = null, mixed $default = null, ?string $cast = null) : mixed
+    {
+        if (empty($key))
+        {
+            return null;
+        }
+
+        $return = LocalizationUtility::translate(
+            key: $key,
+            extensionName: $extensionName,
+            arguments: $arguments,
+            languageKey: $languageKey ?? static::getSiteLanguage()?->getTypo3Language(),
+            alternativeLanguageKeys: $alternativeLanguageKeys
+        ) ?? $default;
+
+        if ($cast !== null)
+        {
+            settype($return, $cast);
+        }
+
+        return $return;
+    }
 }
