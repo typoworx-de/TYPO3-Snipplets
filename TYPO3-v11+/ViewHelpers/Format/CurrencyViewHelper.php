@@ -2,9 +2,10 @@
 declare(strict_types=1);
 namespace Foo\Bar\ViewHelpers\Format;
 
-use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use TYPO3\CMS\Fluid\ViewHelpers\Format\CurrencyViewHelper as FluidCurrencyViewHelper;
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
+use Foo\Bar\Utility\FrontendUtility;
 
 /**
  * @usage in Fluid
@@ -15,7 +16,6 @@ class CurrencyViewHelper extends FluidCurrencyViewHelper
     public function initializeArguments()
     {
         parent::initializeArguments();
-
         unset(
             $this->argumentDefinitions['currencySign'],
             $this->argumentDefinitions['decimalSeparator'],
@@ -36,9 +36,9 @@ class CurrencyViewHelper extends FluidCurrencyViewHelper
     public static function renderStatic(array $arguments, \Closure $renderChildrenClosure, RenderingContextInterface $renderingContext) :? string
     {
         static::localizeArgument('localisation.currency.currencySign', $arguments['currencySign']);
-        static::localizeArgument('localisation.currency.decimals', $arguments['decimals'], 2, 'int');
         static::localizeArgument('localisation.currency.prependCurrency', $arguments['prependCurrency'], false, 'bool');
         static::localizeArgument('localisation.currency.separateCurrency', $arguments['separateCurrency'], true, 'bool');
+        static::localizeArgument('localisation.currency.decimals', $arguments['decimals'], 2, 'int');
         static::localizeArgument('localisation.currency.separator.decimal', $arguments['decimalSeparator'], ',');
         static::localizeArgument('localisation.currency.separator.thousands', $arguments['thousandsSeparator'], '.');
 
@@ -47,16 +47,16 @@ class CurrencyViewHelper extends FluidCurrencyViewHelper
 
     protected static function localizeArgument(string $key, mixed &$argument, mixed $default = null, ?string $cast = null) : void
     {
-        if ($argument !==null || empty($key))
+        if ($argument !== null || empty($key))
         {
             return;
         }
 
-        $argument = LocalizationUtility::translate(key: $key, extensionName: 'fwf_searchbar') ?? $default;
-
-        if ($cast !== null)
-        {
-            settype($argument, $cast);
-        }
+        $argument = FrontendUtility::translate(
+            key: $key,
+            extensionName: 'fwf_searchbar',
+            default: $default,
+            cast: $cast
+        );
     }
 }
