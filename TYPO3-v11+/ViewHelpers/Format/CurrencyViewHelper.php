@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace TYPOworx\FwfSearchbar\ViewHelpers\Format;
+namespace Foo\Bar\ViewHelpers\Format;
 
 use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3\CMS\Fluid\ViewHelpers\Format\CurrencyViewHelper as FluidCurrencyViewHelper;
