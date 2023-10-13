@@ -2,7 +2,6 @@
 declare(strict_types=1);
 namespace Foo\Bar\ViewHelpers\Format;
 
-use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use TYPO3\CMS\Fluid\ViewHelpers\Format\CurrencyViewHelper as FluidCurrencyViewHelper;
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
 use Foo\Bar\Utility\FrontendUtility;
