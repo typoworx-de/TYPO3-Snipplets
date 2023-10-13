@@ -4,6 +4,7 @@ namespace Foo\Bar\Utility;
 
 use Psr\Container\ContainerInterface;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use TYPO3\CMS\Extbase\Configuration\ConfigurationManagerInterface;
 use TYPO3\CMS\Fluid\Core\Rendering\RenderingContext;
 use TYPO3\CMS\Frontend\ContentObject\ContentDataProcessor;
@@ -92,13 +93,25 @@ class FrontendUtility
             key: $key,
             extensionName: $extensionName,
             arguments: $arguments,
-            languageKey: $languageKey ?? static::getSiteLanguage()?->getTypo3Language(),
+            languageKey: $languageKey,
             alternativeLanguageKeys: $alternativeLanguageKeys
-        ) ?? $default;
+        );
+
+        $return = $return ?? $default;
 
         if ($cast !== null)
         {
+            if ($cast === 'bool')
+            {
+                $return = $return === true || stripos($return, 'true') === 0;
+            }
+
             settype($return, $cast);
+        }
+
+        if (is_string($return))
+        {
+            $return = trim($return);
         }
 
         return $return;
