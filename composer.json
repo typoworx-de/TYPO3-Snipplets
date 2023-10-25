@@ -1,0 +1,7 @@
+{
+    "scripts": {
+      "typo3-core-update": [
+        "composer require --update-with-all-dependencies $(composer info \"typo3/*\" | grep -Eo \"^[^ ]+\")"
+      ],
+    }
+}
