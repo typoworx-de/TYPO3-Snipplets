@@ -45,8 +45,16 @@ class BackendFlashMessageUtility
         $flashMessageQueue?->enqueue($flashMessage);
     }
 
-    public function flush() : void
+    public function flush(...$severities) : void
     {
+        if (empty($severities))
+        {
+            $severities = [
+                ContextualFeedbackSeverity::WARNING,
+                ContextualFeedbackSeverity::ERROR
+            ];
+        }
+
         if (strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'xmlhttprequest')
         {
             // ByPass AJAX Response
@@ -55,9 +63,13 @@ class BackendFlashMessageUtility
 
         $flashMessageQueue = $this->flashMessageService->getMessageQueueByIdentifier(FlashMessageQueue::NOTIFICATION_QUEUE);
 
+        $hasError = false;
         $jsonMessageQueue = [];
         foreach($flashMessageQueue?->getAllMessages() as $flashMessage)
         {
+            // Backend JS actually only seems to trigger ERROR-Level?!
+            $hasError = $hasError || in_array($flashMessage->getSeverity(), [ ContextualFeedbackSeverity::WARNING, ContextualFeedbackSeverity::ERROR ]);
+
             $jsonMessageQueue[] = [
                 'title'    => $flashMessage->getTitle(),
                 'message'  => $flashMessage->getMessage(),
@@ -70,7 +82,7 @@ class BackendFlashMessageUtility
             $flashMessageQueue?->getAllMessagesAndFlush();
 
             $response = new JsonResponse([
-                'hasErrors' => true,
+                'hasErrors' => $hasError,
                 'messages' => $jsonMessageQueue
             ]);
 
