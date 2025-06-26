@@ -53,8 +53,10 @@ class BackendFlashMessageUtility
             return;
         }
 
+        $flashMessageQueue = $this->flashMessageService->getMessageQueueByIdentifier(FlashMessageQueue::NOTIFICATION_QUEUE);
+
         $jsonMessageQueue = [];
-        foreach($this->flashMessageService?->getAllMessages() as $flashMessage)
+        foreach($flashMessageQueue?->getAllMessages() as $flashMessage)
         {
             $jsonMessageQueue[] = [
                 'title'    => $flashMessage->getTitle(),
@@ -65,7 +67,7 @@ class BackendFlashMessageUtility
 
         if (count($jsonMessageQueue) > 0)
         {
-            $this->flashMessageService?->getAllMessagesAndFlush();
+            $flashMessageQueue?->getAllMessagesAndFlush();
 
             $response = new JsonResponse([
                 'hasErrors' => true,
